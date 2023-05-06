@@ -2,12 +2,9 @@
 using BlendoBot.Core.Entities;
 using BlendoBot.Core.Module;
 using BlendoBot.Core.Utility;
+using BlendoBot.Module.CurrencyConverter.API;
 using DSharpPlus.EventArgs;
-using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
-using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace BlendoBot.Module.CurrencyConverter;
@@ -24,13 +21,14 @@ internal class CurrencyConverterCommand : ICommand {
 	public string DesiredTerm => "currency";
 	public string Description => "Returns the conversion rate between two currencies";
 	public Dictionary<string, string> Usage => new() {
-		{ "[value] [from] [to]", $"Shows how much {"value".Code()} in currency {"from".Code()} is in {"to".Code()}" },
+		{ "[value] [from] [to]", $"Converts {"value".Code()} amount of currency {"from".Code()} into currency {"to".Code()}" },
+		{ "Note", "The currently supported currencies are listed at https://www.xe.com/currencyconverter/" }
 	};
 		
 	public async Task OnMessage(MessageCreateEventArgs e, string[] tokenizedInput) {
 		if (tokenizedInput.Length < 3) {
 			await module.DiscordInteractor.Send(this, new SendEventArgs {
-				Message = $"Too few arguments specified to {module.ModuleManager.GetHelpTermForCommand(this).Code()}",
+				Message = $"Too few arguments specified! See {module.ModuleManager.GetHelpTermForCommand(this).Code()} for help!",
 				Channel = e.Channel,
 				Tag = "CurrencyErrorTooFewArgs"
 			});
@@ -55,40 +53,21 @@ internal class CurrencyConverterCommand : ICommand {
 			return;
 		}
 
-		string fromCurrency = tokenizedInput[1];
-		int foundMatches = 0;
-		List<string> failedMatches = new();
+		DdgConversionResponse response = await module.DdgCurrencyClient.ConvertCurrency(tokenizedInput[0], tokenizedInput[1], tokenizedInput[2]);
 
-		StringBuilder sb = new();
-
-		for (int i = 2; i < tokenizedInput.Length; ++i) {
-			using HttpClient wc = new();
-			string convertJsonString = await wc.GetStringAsync($"https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency={fromCurrency}&to_currency={tokenizedInput[i]}&apikey={module.ApiKey}");
-			dynamic convertJson = JsonConvert.DeserializeObject(convertJsonString);
-			try {
-				double rate = convertJson["Realtime Currency Exchange Rate"]["5. Exchange Rate"];
-				if (foundMatches == 0) {
-					sb.AppendLine($"{amount.ToString("0.00000")[..7].Code()} - {convertJson["Realtime Currency Exchange Rate"]["1. From_Currency Code"]} ({((string)convertJson["Realtime Currency Exchange Rate"]["2. From_Currency Name"]).Italics()})");
-				}
-				sb.AppendLine($"{(amount * rate).ToString("0.00000")[..7].Code()} - {convertJson["Realtime Currency Exchange Rate"]["3. To_Currency Code"]} ({((string)convertJson["Realtime Currency Exchange Rate"]["4. To_Currency Name"]).Italics()})");
-				++foundMatches;
-			} catch (Exception) {
-				// Unsuccessful, next one.
-				failedMatches.Add(tokenizedInput[i]);
-			}
+		if (response.Headers.Status == "0") {
+			await module.DiscordInteractor.Send(this, new SendEventArgs {
+				Message = $"{response.Conversion.FromAmount} {response.Conversion.FromCurrencySymbol} ({response.Conversion.FromCurrencyName.Italics()}) = {response.Conversion.ConvertedAmount} {response.Conversion.ToCurrencySymbol} ({response.Conversion.ToCurrencyName.Italics()})",
+				Channel = e.Channel,
+				Tag = "CurrencySuccess"
+			});
+		} else {
+			await module.DiscordInteractor.Send(this, new SendEventArgs {
+				Message = $"Something went wrong!\n{response.Headers.Description}",
+				Channel = e.Channel,
+				Tag = "CurrencyFailure"
+			});
 		}
 
-		if (failedMatches.Count > 0) {
-			sb.Append("Failed to match the currency codes: ");
-			foreach (string failedCode in failedMatches) {
-				sb.Append($"{failedCode.Code()} ");
-			}
-		}
-
-		await module.DiscordInteractor.Send(this, new SendEventArgs {
-			Message = sb.ToString(),
-			Channel = e.Channel,
-			Tag = "CurrencySuccess"
-		});
 	}
 }
