@@ -32,6 +32,7 @@ public class CurrencyConverter : IModule, IDisposable {
 		GuildId = guildId;
 		return Task.FromResult(ModuleManager.RegisterCommand(this, CurrencyConverterCommand, out _));
 	}
+
 	public void Dispose() {
 		Dispose(true);
 		GC.SuppressFinalize(this);

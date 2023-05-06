@@ -55,7 +55,7 @@ public record DdgConversionResponse {
 	}
 }
 
-public class DateTimeConverter : JsonConverter<DateTime> {
+internal class DateTimeConverter : JsonConverter<DateTime> {
 	private const string DATETIME_FORMAT = "yyyy-MM-dd HH:mm";
 
 	public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
