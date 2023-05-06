@@ -18,17 +18,14 @@ jobs:
         shell: pwsh
         continue-on-error: true
         run: |
-          $lastTag = $(git describe --tags --abbrev=0)
+          $lastTag = $(git tag | ForEach-Object { [System.Management.Automation.SemanticVersion]::new($_) } | Sort-Object | Select-Object -Last 1)
           if ([string]::IsNullOrEmpty($lastTag)) {
             $newTag = "1.0.0-pre.1"
           } else {
-            $prefixTag = $($lastTag.Split('.') | Select-Object -SkipLast 1) -join '.'
-            $lastTerm = $lastTag.Split('.')[-1]
-            $intendedLastTerm = [int]$lastTerm + 1
-            if ($lastTag -match "-pre") {
-              $newTag = $prefixTag + "." + [string]$intendedLastTerm
+            if ([string]::IsNullOrEmpty($lastTag.PreReleaseLabel)) {
+              $newTag = [System.Management.Automation.SemanticVersion]::new($lastTag.Major, $lastTag.Minor, $lastTag.Patch + 1, "pre.1").ToString()
             } else {
-              $newTag = $prefixTag + "." + [string]$intendedLastTerm + "-pre.1"
+              $newTag = [System.Management.Automation.SemanticVersion]::new($lastTag.Major, $lastTag.Minor, $lastTag.Patch, "pre." + ([int]::Parse($lastTag.PreReleaseLabel.Substring(4)) + 1)).ToString()
             }
           }
           Write-Output "::set-output name=tag_name::$newTag"
