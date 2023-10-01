@@ -1,28 +1,2 @@
 ddg_spice_currency(
-{
-"headers":{
-"encoding": "utf-8",
-"language": "en",
-"legal-warning": "Use of this service is subject to the terms of use at http://www.xe.com/legal/",
-"help-notice": "For help using this service, please see: http://www.xe.com/tmi/help.php",
-"utc-timestamp": "2023-05-06 01:41:27",
-"status":"5",
-"output-format":"json",
-"description": "ERROR: Invalid to_currency_symbol."
-},
-"conversion":{
-"rate-utc-timestamp": "",
-"rate-frequency": "daily rates",
-"from-amount": "1",
-"from-currency-symbol": "USD",
-"from-currency-name": "United States Dollars",
-"converted-amount": "",
-"to-currency-symbol": "BAD",
-"to-currency-name": "",
-"conversion-rate": "",
-"conversion-inverse": ""
-},
-"topConversions":[
-]
-}
-);
+{"terms":"http://www.xe.com/legal/dfs.php","privacy":"http://www.xe.com/privacy.php","from":"USD","amount":1.0,"timestamp":"2023-09-30T22:33:00Z","to":[]});

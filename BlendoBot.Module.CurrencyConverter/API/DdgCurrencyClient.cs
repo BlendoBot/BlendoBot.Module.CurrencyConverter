@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -24,8 +25,19 @@ public class DdgCurrencyClient : IDisposable {
 		}
 	}
 
-	public async Task<DdgConversionResponse> ConvertCurrency(string amount, string fromCurrency, string toCurrency) {
-		return await Get<DdgConversionResponse>($"https://duckduckgo.com/js/spice/currency/{amount}/{fromCurrency}/{toCurrency}");
+	public async Task<Result<DdgConversionResponse, DdgConversionErrorResponse>> ConvertCurrency(string amount, string fromCurrency, string toCurrency) {
+		return await Get<DdgConversionResponse, DdgConversionErrorResponse>($"https://duckduckgo.com/js/spice/currency/{amount}/{fromCurrency}/{toCurrency}");
+	}
+
+	private async Task<Result<T, E>> Get<T, E>(string url) {
+		HttpResponseMessage response = await httpClient.GetAsync(url);
+		if (response.StatusCode == HttpStatusCode.BadRequest) {
+			E errorResponse = JsonSerializer.Deserialize<E>(StripExtraContent(await response.Content.ReadAsStringAsync()), new JsonSerializerOptions() { IncludeFields = true }) ?? throw new JsonException($"Could not deserialize {nameof(E)}");
+			return new(errorResponse);
+		}
+		response.EnsureSuccessStatusCode();
+		T responseObject = JsonSerializer.Deserialize<T>(StripExtraContent(await response.Content.ReadAsStringAsync()), new JsonSerializerOptions() { IncludeFields = true }) ?? throw new JsonException($"Could not deserialize {nameof(T)}");
+		return new(responseObject);
 	}
 
 	private async Task<T> Get<T>(string url) {
@@ -34,5 +46,5 @@ public class DdgCurrencyClient : IDisposable {
 		return responseObject;
 	}
 
-	private static string StripExtraContent(string content) => string.Join("\n", content.Split("\n").Skip(1).SkipLast(2));
+	private static string StripExtraContent(string content) => content.Split("\n").Skip(1).First()[..^2];
 }

@@ -53,21 +53,44 @@ internal class CurrencyConverterCommand : ICommand {
 			return;
 		}
 
-		DdgConversionResponse response = await module.DdgCurrencyClient.ConvertCurrency(tokenizedInput[0], tokenizedInput[1], tokenizedInput[2]);
+		Result<DdgConversionResponse, DdgConversionErrorResponse> response = await module.DdgCurrencyClient.ConvertCurrency(tokenizedInput[0], tokenizedInput[1], tokenizedInput[2]);
 
-		if (response.Headers.Status == "0") {
-			await module.DiscordInteractor.Send(this, new SendEventArgs {
-				Message = $"{response.Conversion.FromAmount} {response.Conversion.FromCurrencySymbol} ({response.Conversion.FromCurrencyName.Italics()}) = {response.Conversion.ConvertedAmount} {response.Conversion.ToCurrencySymbol} ({response.Conversion.ToCurrencyName.Italics()})",
-				Channel = e.Channel,
-				Tag = "CurrencySuccess"
-			});
+		if (response.Success is not null) {
+			if (response.Success.To.Count > 0) {
+				await module.DiscordInteractor.Send(this, new SendEventArgs {
+					Message = $"{response.Success.Amount} {response.Success.From} = {response.Success.To[0].Mid} {response.Success.To[0].QuoteCurrency}",
+					Channel = e.Channel,
+					Tag = "CurrencySuccess"
+				});
+			} else {
+				await module.DiscordInteractor.Send(this, new SendEventArgs {
+					Message = $"Something went wrong!\nError: Invalid to currency {tokenizedInput[2]}.",
+					Channel = e.Channel,
+					Tag = "CurrencyInvalidToCurrency"
+				});
+			}
 		} else {
-			await module.DiscordInteractor.Send(this, new SendEventArgs {
-				Message = $"Something went wrong!\n{response.Headers.Description}",
-				Channel = e.Channel,
-				Tag = "CurrencyFailure"
-			});
+			if (response.Error is not null) {
+				if (response.Error.Message.StartsWith("No ") && response.Error.Message.Contains(" found on ")) {
+					await module.DiscordInteractor.Send(this, new SendEventArgs {
+						Message = $"Something went wrong!\nError: Invalid from currency {tokenizedInput[1]}.",
+						Channel = e.Channel,
+						Tag = "CurrencyInvalidFromCurrency"
+					});
+				} else {
+					await module.DiscordInteractor.Send(this, new SendEventArgs {
+						Message = $"Something went wrong!\n{response.Error.Message}",
+						Channel = e.Channel,
+						Tag = "CurrencyInvalidGeneric"
+					});
+				}
+			} else {
+				await module.DiscordInteractor.Send(this, new SendEventArgs {
+					Message = $"Something went wrong!\nThe API returned something unhandleable!",
+					Channel = e.Channel,
+					Tag = "CurrencyFailure"
+				});
+			}
 		}
-
 	}
 }

@@ -1,28 +1,2 @@
 ddg_spice_currency(
-{
-"headers":{
-"encoding": "utf-8",
-"language": "en",
-"legal-warning": "Use of this service is subject to the terms of use at http://www.xe.com/legal/",
-"help-notice": "For help using this service, please see: http://www.xe.com/tmi/help.php",
-"utc-timestamp": "2023-05-06 01:40:56",
-"status":"4",
-"output-format":"json",
-"description": "ERROR: Invalid from_currency_symbol."
-},
-"conversion":{
-"rate-utc-timestamp": "",
-"rate-frequency": "daily rates",
-"from-amount": "1",
-"from-currency-symbol": "BAD",
-"from-currency-name": "",
-"converted-amount": "",
-"to-currency-symbol": "AUD",
-"to-currency-name": "",
-"conversion-rate": "",
-"conversion-inverse": ""
-},
-"topConversions":[
-]
-}
-);
+{"code":7,"message":"No BAD found on 2023-09-30T22:33:00Z","documentation_url":"https://xecdapi.xe.com/docs/v1/"});
